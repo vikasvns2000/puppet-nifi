@@ -1,0 +1,12 @@
+[Unit]
+Description=Nifi 
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+Environment=APPLICATION_ENV=<%= scope.lookupvar('environment') %>
+ExecStart=<%= scope.lookupvar('nifi::root_path') %>/nifi-<%= scope.lookupvar('nifi::version') %>/bin/nifi.sh start
+ExecStop=<%= scope.lookupvar('nifi::root_path') %>/nifi-<%= scope.lookupvar('nifi::version') %>/bin/nifi.sh stop
+
+[Install]
+WantedBy=multi-user.target
