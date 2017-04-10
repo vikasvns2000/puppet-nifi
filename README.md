@@ -1,4 +1,4 @@
-# puppet-jenkins
+# puppet-nifi
 
 Puppet manifest to install and configure Apache nifi
 
