@@ -31,13 +31,13 @@ class nifi::config {
   # Increase the number of TCP socket ports available
   sysctl::value { 'net.ipv4.ip_local_port_range':
     ensure => 'present',
-    value  => '10000 65000'
+    value  => "10000 65000"
   }
 
   # Set how long sockets stay in a TIMED_WAIT state when closed
   sysctl::value { 'net.ipv4.netfilter.ip_conntrack_tcp_timeout_time_wait':
     ensure => 'present',
-    value  => '10000 65000'
+    value  => "10000 65000"
   }
 }
 
