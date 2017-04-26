@@ -8,7 +8,7 @@ See [Nifi site](https://nifi.apache.org/)
 
 ## usage
 
-```ruby
+```puppet
 include nifi
 
 nifi_pg {'test':
@@ -17,6 +17,11 @@ nifi_pg {'test':
 
 nifi_template {'IN.hmStaff.taskStatus.xml':
   path   => 'https://your.domain.net/IN.hmStaff.taskStatus.xml',
+  ensure => present
+}
+
+nifi_template {'IN.hmClients.taskStatus.xml':
+  path   => '/opt/nifi/templetes/IN.hmClients.taskStatus.xml',
   ensure => present
 }
 ```
