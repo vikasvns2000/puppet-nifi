@@ -3,6 +3,11 @@ class nifi::install {
   $source         = "${nifi::repo_scheme}://${nifi::repo_domain}/${nifi::repo_path}/${nifi::repo_resource}"
   $source_toolkit = "${nifi::repo_scheme}://${nifi::repo_domain}/${nifi::repo_path}/${nifi::repo_toolkit_resource}"
 
+  package { 'nifi_sdk_ruby':
+    ensure  => present,
+    provide => 'gem'
+  }
+
   wget::fetch {'nifi_get_package':
     source      => $source,
     user        => $nifi::repo_user,
