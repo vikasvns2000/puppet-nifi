@@ -17,7 +17,7 @@ Puppet::Type.type(:nifi_template).provide(:ruby) do
       nifi_client = Nifi.new()
       nifi_client.set_debug true
       t_id = nifi_client.get_template_by_name resource[:name]
-      nifi_client.delete_delete t_id
+      nifi_client.delete_template t_id
     end
 
     def exists?
