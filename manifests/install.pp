@@ -4,8 +4,8 @@ class nifi::install {
   $source_toolkit = "${nifi::repo_scheme}://${nifi::repo_domain}/${nifi::repo_path}/${nifi::repo_toolkit_resource}"
 
   package { 'nifi_sdk_ruby':
-    ensure  => present,
-    provide => 'gem'
+    ensure   => present,
+    provider => 'gem'
   }
 
   wget::fetch {'nifi_get_package':
@@ -30,14 +30,14 @@ class nifi::install {
     cwd     => '/opt/',
     command => "/bin/tar xvfz /tmp/${nifi::repo_resource}",
     require => Wget::Fetch['nifi_get_package'],
-    unless  => "/usr/bin/test -d i/opt/nifi-${nifi::version}"
+    unless  => "/usr/bin/test -d /opt/nifi-${nifi::version}"
   }
 
   exec {'nifi_install_toolkit_package':
     cwd     => '/opt/',
     command => "/bin/tar xvfz /tmp/${nifi::repo_toolkit_resource}",
     require => Wget::Fetch['nifi_get_package'],
-    unless  => "/usr/bin/test -d i/opt/nifi-toolkit-${nifi::version}"
+    unless  => "/usr/bin/test -d /opt/nifi-toolkit-${nifi::version}"
   }
 
   include ::systemd
