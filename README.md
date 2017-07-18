@@ -39,23 +39,33 @@ nifi_template {'IN.hmClients.taskStatus.xml':
 
 You can do this by hand using [this guide](https://www.batchiq.com/nifi-configuring-ssl-auth.html) or you can use [nifi tool](https://nifi.apache.org/docs/nifi-docs/html/administration-guide.html#tls-generation-toolkit)
 
+Example
+
+```
+root@doc# openssl req -x509 -newkey rsa:2048 -keyout admin-private-key.pem -out admin-cert.pem -days 365 -subj "/CN=admin/DC=nifi/DC=com" -nodes
+Generating a 2048 bit RSA private key
+...............................................................+++
+.....................+++
+writing new private key to 'admin-private-key.pem'
+-----
+root@doc# openssl pkcs12 -inkey admin-private-key.pem -in admin-cert.pem -export -out admin-q-user.pfx -passout pass:"SuperSecretA"
+root@doc# keytool -genkeypair -alias nifiserver -keyalg RSA -keypass SuperSecretA -storepass SuperSecretB -keystore keystore.jks -dname "CN=Test NiFi Server" -noprompt
+root@doc# keytool -importcert -v -trustcacerts -alias admin -file admin-cert.pem -keystore truststore.jks  -storepass SuperSecretC -noprompt
+
+```
+
 At the end you must have:
 
 * A keystore file (keystore.jks)
 * A Keystore password
 * A Truststore file (truststore.jks)
 * A Truststore password
-* A User certificate (P12 and PEM)
-
-To transfoem P12 to PEM...
-
-```
-openssl pkcs12 -in  CN=admin_DC=nifi_DC=com.p12 -passin pass:26V+Hs1qupglToDlVqO+oKW0yWR2jG3uXjuFTUus76o -out CN=admin_DC=nifi_DC=com.pem
-```
+* A User certificate (P12 and PEM, **Both**)
+* A User certificate key.
 
 Final steps:
 
-Add your User certificate to your browser. ( Described [here](https://www.batchiq.com/nifi-configuring-ssl-auth.html) or you can use [nifi tool](https://nifi.apache.or    g/docs/nifi-docs/html/administration-guide.html#tls-generation-toolkit)) )
+Add your User certificate to your browser. ( Described [here](https://www.batchiq.com/nifi-configuring-ssl-auth.html) or you can use [nifi tool](https://nifi.apache.org/docs/nifi-docs/html/administration-guide.html#tls-generation-toolkit)) )
 
 Change your node definition.
 
@@ -63,25 +73,27 @@ Change your node definition.
 class {'nifi':
   auth                   => 'cert',
   keystore_file_source   => 'https://ec2-33-238-128-156.eu-west-1.compute.amazonaws.com/keystore.jks',
-  keystore_password      => 'E+1QhIPIa4t4yeKbsNP9UygyexN6LBXPj0Ng/gMlbJU',
+  keystore_password      => 'SuperSecretB',
   truststore_file_source => 'https://ec2-33-238-128-156.eu-west-1.compute.amazonaws.com/truststore.jks',
-  truststore_password    => 'cptQV3vpgae/yMZZ2JcP5N35E6pL0zXUz5m390fUaQU',
-  admin_name             => 'CN=admin, DC=nifi, DC=com',
-  admin_cert             => 'CN=admin_DC=nifi_DC=com.pem'
+  truststore_password    => 'SuperSecretC',
+  admin                  => 'CN=admin, DC=nifi, DC=com'
 }
 
 nifi_pg {'test':
-  ensure => present
+  ensure        => present,
+  secure        => true,
+  cert          => '/tmp/admin-cert.pem',
+  cert_key      => '/tmp/admin-private-key.pem',
+  cert_password => 'SuperSecretA'
 }
 
 nifi_template {'IN.hmStaff.taskStatus.xml':
-  path   => 'https://your.domain.net/IN.hmStaff.taskStatus.xml',
-  ensure => present
-}
-
-nifi_template {'IN.hmClients.taskStatus.xml':
-  path   => '/opt/nifi/templetes/IN.hmClients.taskStatus.xml',
-  ensure => present
+  ensure        => present,
+  path          => 'https://ec2-33-238-128-156.eu-west-1.compute.amazonaws.com/IN.hmStaff.taskStatus.xml',
+  secure        => true,
+  cert          => '/tmp/admin-cert.pem',
+  cert_key      => '/tmp/admin-private-key.pem',
+  cert_password => 'SuperSecretA'
 }
 ```
 
