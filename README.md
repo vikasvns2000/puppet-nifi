@@ -51,7 +51,6 @@ writing new private key to 'admin-private-key.pem'
 root@doc# openssl pkcs12 -inkey admin-private-key.pem -in admin-cert.pem -export -out admin-q-user.pfx -passout pass:"SuperSecretA"
 root@doc# keytool -genkeypair -alias nifiserver -keyalg RSA -keypass SuperSecretA -storepass SuperSecretB -keystore keystore.jks -dname "CN=Test NiFi Server" -noprompt
 root@doc# keytool -importcert -v -trustcacerts -alias admin -file admin-cert.pem -keystore truststore.jks  -storepass SuperSecretC -noprompt
-
 ```
 
 At the end you must have:
