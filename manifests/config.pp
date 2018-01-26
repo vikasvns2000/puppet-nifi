@@ -29,16 +29,16 @@ class nifi::config {
   }
 
   # Increase the number of TCP socket ports available
-  sysctl::value { 'net.ipv4.ip_local_port_range':
-    ensure => 'present',
-    value  => "10000 65000"
-  }
+  #sysctl::value { 'net.ipv4.ip_local_port_range':
+  #  ensure => 'present',
+  #  value  => "10000 65000"
+  #}
 
   # Set how long sockets stay in a TIMED_WAIT state when closed
-  sysctl::value { 'net.ipv4.netfilter.ip_conntrack_tcp_timeout_time_wait':
-    ensure => 'present',
-    value  => "10000 65000"
-  }
+  #sysctl::value { 'net.ipv4.netfilter.ip_conntrack_tcp_timeout_time_wait':
+  #  ensure => 'present',
+  #  value  => "10000 65000"
+  #}
 
   if $nifi::secure {
     if 'http://' in $nifi::keystore_file_source or 'https://' in $nifi::keystore_file_source {
@@ -52,7 +52,14 @@ class nifi::config {
         unless             => "/usr/bin/test -f /opt/nifi-${nifi::version}/conf/keystore.jks"
       }
     } elsif 'file://' in $nifi::keystore_file_source {
-      notify{'nifi_keystore_file from File':}
+      file { 'nifi_keystore_from_file':
+        ensure => present,
+        path   => "/opt/nifi-${nifi::version}/conf/keystore.jks",
+        owner  => 'root',
+        group  => 'root',
+        mode   => '0664',
+        source => $nifi::keystore_file_source
+      }
     } else {
       notify{'nifi_keystore_file from Puppet':}
     }
@@ -70,9 +77,25 @@ class nifi::config {
         unless             => "/usr/bin/test -f /opt/nifi-${nifi::version}/conf/truststore.jks"
       }
     } elsif 'file://' in $nifi::truststore_file_source {
-      notify{'truststore_file_source from File':}
+      file { 'nifi_truststore_from_file':
+        ensure => present,
+        path   => "/opt/nifi-${nifi::version}/conf/truststore.jks",
+        owner  => 'root',
+        group  => 'root',
+        mode   => '0664',
+        source => $nifi::truststore_file_source
+      }
     } else {
       notify{'truststore_file_source from puppet':}
+    }
+
+    augeas{'nifi_admin_user_authorizers' :
+      incl    => "/opt/nifi-${nifi::version}/conf/authorizers.xml",
+      context => "/files/opt/nifi-${nifi::version}/conf/authorizers.xml",
+      lens    => 'Xml.lns',
+      changes => [
+        "set /files/opt/nifi-${nifi::version}/conf/authorizers.xml/authorizers/authorizer/property[#attribute[name='Initial Admin Identity']]/#text '${nifi::admin}'",
+      ]
     }
   }
 
@@ -85,12 +108,13 @@ class nifi::config {
     mode    => '0600',
   }
 
-  augeas{'nifi_admin_user' :
-    incl    => "/opt/nifi-${nifi::version}/conf/authorizers.xml",
-    context => "/files/opt/nifi-${nifi::version}/conf/authorizers.xml",
-    lens    => 'Xml.lns',
-    changes => [
-      "set /files/opt/nifi-${nifi::version}/conf/authorizers.xml/authorizers/authorizer/property[#attribute[name='Initial Admin Identity']]/#text '${nifi::admin}'",
-    ]
+  file { 'nifi_users_xml':
+    ensure  => present,
+    path    => "/opt/nifi-${nifi::version}/conf/users.xml",
+    content => template("${module_name}/users.xml.erb"),
+    owner   => 'root',
+    group   => 'root',
+    mode    => '0600',
+    replace => false,
   }
 }
