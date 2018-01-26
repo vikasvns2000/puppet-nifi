@@ -3,9 +3,15 @@ class nifi::install {
   $source         = "${nifi::repo_scheme}://${nifi::repo_domain}/${nifi::repo_path}/${nifi::repo_resource}"
   $source_toolkit = "${nifi::repo_scheme}://${nifi::repo_domain}/${nifi::repo_path}/${nifi::repo_toolkit_resource}"
 
+  if $rubysitedir =~ /puppetlabs/ {
+    $nifi_sdk_ruby_provider = 'puppet_gem'
+  } else {
+    $nifi_sdk_ruby_provider = 'gem'
+  }
+
   package { 'nifi_sdk_ruby':
     ensure   => present,
-    provider => 'gem'
+    provider => $nifi_sdk_ruby_provider
   }
 
   wget::fetch {'nifi_get_package':
@@ -36,7 +42,7 @@ class nifi::install {
   exec {'nifi_install_toolkit_package':
     cwd     => '/opt/',
     command => "/bin/tar xvfz /tmp/${nifi::repo_toolkit_resource}",
-    require => Wget::Fetch['nifi_get_package'],
+    require => Wget::Fetch['nifi_get_toolkit_package'],
     unless  => "/usr/bin/test -d /opt/nifi-toolkit-${nifi::version}"
   }
 
