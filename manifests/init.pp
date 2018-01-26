@@ -11,9 +11,10 @@ class nifi (
   $repo_resource          = regsubst($nifi::params::repo_resource, 'NIFIVERSION', $version),
   $repo_toolkit_resource  = regsubst($nifi::params::repo_toolkit_resource, 'NIFIVERSION', $version),
   $auth                   = undef,
+  $admin                  = undef,
+  $key_password           = undef,
   $keystore_file_source   = undef,
   $keystore_password      = undef,
-  $admin                  = undef,
   $truststore_file_source = undef,
   $truststore_password    = undef,
 
@@ -38,6 +39,10 @@ class nifi (
       fail('Auth with certs needs an admin user name')
     }
 
+    if ! $key_password {
+      fail('Auth with certs needs an key_pass 4 admin')
+    }
+
     if ! $truststore_file_source {
       fail('Auth with certs needs a truststore')
     }
@@ -46,6 +51,8 @@ class nifi (
       fail('Auth with certs needs a truststore password')
     }
   }
+
+  $nifi_admin_uuid = fqdn_uuid($admin)
 
   anchor {'nifi::begin':
     before => Class['nifi::install']
@@ -59,7 +66,10 @@ class nifi (
   class {'nifi::service':
     subscribe => Class['nifi::config']
   }
+  class {'nifi::postconfig':
+    subscribe => Class['nifi::service']
+  }
   anchor {'nifi::end':
-    require => Class['nifi::service']
+    require => Class['nifi::postconfig']
   }
 }
