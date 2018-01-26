@@ -32,6 +32,13 @@ Puppet::Type.newtype(:nifi_template) do
     end
   end
 
+  newparam(:host) do
+    desc "Nifi host"
+
+    validate do |value|
+    end
+  end
+
   newparam(:path) do
     desc "Template path"
 

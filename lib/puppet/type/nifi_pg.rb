@@ -30,6 +30,13 @@ Puppet::Type.newtype(:nifi_pg) do
     end
   end
 
+  newparam(:host) do
+    desc "Process group ID"
+
+    validate do |value|
+    end
+  end
+
   newparam(:cert) do
     desc "Client certificate."
 
