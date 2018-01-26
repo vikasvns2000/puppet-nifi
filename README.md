@@ -41,6 +41,8 @@ You can do this by hand using [this guide](https://www.batchiq.com/nifi-configur
 
 Example
 
+
+#### Create server certificates.
 ```
 root@doc# openssl req -x509 -newkey rsa:2048 -keyout admin-private-key.pem -out admin-cert.pem -days 365 -subj "/CN=admin/DC=nifi/DC=com" -nodes
 Generating a 2048 bit RSA private key
@@ -48,9 +50,21 @@ Generating a 2048 bit RSA private key
 .....................+++
 writing new private key to 'admin-private-key.pem'
 -----
-root@doc# openssl pkcs12 -inkey admin-private-key.pem -in admin-cert.pem -export -out admin-q-user.pfx -passout pass:"SuperSecretA"
-root@doc# keytool -genkeypair -alias nifiserver -keyalg RSA -keypass SuperSecretA -storepass SuperSecretB -keystore keystore.jks -dname "CN=Test NiFi Server" -noprompt
-root@doc# keytool -importcert -v -trustcacerts -alias admin -file admin-cert.pem -keystore truststore.jks  -storepass SuperSecretC -noprompt
+```
+
+#### Create User certificate.
+```
+root@doc# openssl pkcs12 -inkey admin-private-key.pem -in admin-cert.pem -export -out admin-q-user.pfx -passout pass:"SecretUser"
+```
+
+#### Create keystore.
+```
+root@doc# keytool -genkeypair -alias nifiserver -keyalg RSA -keypass SecretServer -storepass SecretServer -keystore keystore.jks -dname "CN=Test NiFi Server" -noprompt
+```
+
+#### Create truststore.
+```
+root@doc# keytool -importcert -v -trustcacerts -alias admin -file admin-cert.pem -keystore truststore.jks -storepass SecretServer -noprompt
 ```
 
 At the end you must have:
@@ -59,12 +73,13 @@ At the end you must have:
 * A Keystore password
 * A Truststore file (truststore.jks)
 * A Truststore password
-* A User certificate (P12 and PEM, **Both**)
-* A User certificate key.
+* A User certificate (P12)
 
 Final steps:
 
-Add your User certificate to your browser. ( Described [here](https://www.batchiq.com/nifi-configuring-ssl-auth.html) or you can use [nifi tool](https://nifi.apache.org/docs/nifi-docs/html/administration-guide.html#tls-generation-toolkit)) )
+Add your User certificate to your browser. ( Described [here](https://www.batchiq.com/nifi-configuring-ssl-auth.html))
+
+You can use [nifi tool](https://nifi.apache.org/docs/nifi-docs/html/administration-guide.html#tls-generation-toolkit) to manage certs. 
 
 Change your node definition.
 
@@ -72,27 +87,44 @@ Change your node definition.
 class {'nifi':
   auth                   => 'cert',
   keystore_file_source   => 'https://ec2-33-238-128-156.eu-west-1.compute.amazonaws.com/keystore.jks',
-  keystore_password      => 'SuperSecretB',
+  keystore_password      => 'SecretServer'
   truststore_file_source => 'https://ec2-33-238-128-156.eu-west-1.compute.amazonaws.com/truststore.jks',
-  truststore_password    => 'SuperSecretC',
+  truststore_password    => 'SecretServer',
   admin                  => 'CN=admin, DC=nifi, DC=com'
 }
 
+class {'nifi':
+  auth                   => 'cert',
+  keystore_file_source   => 'file:///vagrant/data/nifi/keystore.jks', # or https://ec2-33-238-128-156.eu-west-1.compute.amazonaws.com/keystore.jks
+  keystore_password      => 'SuperSecret',
+  truststore_file_source => 'file:///vagrant/data/nifi/truststore.jks', # or https://ec2-33-238-128-156.eu-west-1.compute.amazonaws.com/truststore.jks
+  truststore_password    => 'SuperSecret',
+  admin                  => 'DC=com, DC=nifi, CN=admin',
+  key_password           => 'SuperSecretUser',
+  require                => [Class['java','ruby::dev'], Package['libcurl4-openssl-dev', 'zlib1g-dev']]
+  } ->
+exec { 'sleep_4_nifi_service' :
+  require => Service["nifi"],
+  command => 'sleep 60',
+  path    => "/usr/bin:/bin:/usr/sbin",
+}
+
 nifi_pg {'test':
-  ensure        => present,
-  secure        => true,
-  cert          => '/tmp/admin-cert.pem',
-  cert_key      => '/tmp/admin-private-key.pem',
-  cert_password => 'SuperSecretA'
+  ensure   => present,
+  secure   => true,
+  host     => $facts[networking][ip],
+  cert     => '/vagrant/data/nifi/admin-cert.pem',
+  cert_key => '/vagrant/data/nifi/admin-private-key.pem',
+  require  => Exec['sleep_4_nifi_service'],
 }
 
 nifi_template {'IN.hmStaff.taskStatus.xml':
-  ensure        => present,
-  path          => 'https://ec2-33-238-128-156.eu-west-1.compute.amazonaws.com/IN.hmStaff.taskStatus.xml',
-  secure        => true,
-  cert          => '/tmp/admin-cert.pem',
-  cert_key      => '/tmp/admin-private-key.pem',
-  cert_password => 'SuperSecretA'
+  ensure   => present,
+  path     => 'http://ec2-54-171-7-117.eu-west-1.compute.amazonaws.com/nifi/IN.hmStaff.taskStatus.xml', # or /vagrant/data/nifi/IN.hmStaff.taskStatus.xml
+  secure   => true,
+  cert     => '/vagrant/data/nifi/admin-cert.pem',
+  cert_key => '/vagrant/data/nifi/admin-private-key.pem',
+  require  => Exec['sleep_4_nifi_service'],
 }
 ```
 
