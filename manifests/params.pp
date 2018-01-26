@@ -11,7 +11,7 @@ class nifi::params {
   $version               = '1.3.0'
   $root_path             = '/opt'
   $repo_scheme           = 'http'
-  $repo_domain           = 'www-eu.apache.org'
+  $repo_domain           = 'archive.apache.org'
   $repo_port             = false
   $repo_user             = false
   $repo_pass             = false
