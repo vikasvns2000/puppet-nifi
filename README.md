@@ -42,7 +42,10 @@ You can do this by hand using [this guide](https://www.batchiq.com/nifi-configur
 Example
 
 
-#### Create server certificates.
+#### Create User certificates.
+
+To be used with [nifi_sdk_ruby](https://github.com/icalvete/nifi_sdk_ruby/)
+
 ```
 root@doc# openssl req -x509 -newkey rsa:2048 -keyout admin-private-key.pem -out admin-cert.pem -days 365 -subj "/CN=admin/DC=nifi/DC=com" -nodes
 Generating a 2048 bit RSA private key
@@ -52,7 +55,10 @@ writing new private key to 'admin-private-key.pem'
 -----
 ```
 
-#### Create User certificate.
+#### Packaging User certificate.
+
+To used with a browser.
+
 ```
 root@doc# openssl pkcs12 -inkey admin-private-key.pem -in admin-cert.pem -export -out admin-q-user.pfx -passout pass:"SecretUser"
 ```
@@ -102,11 +108,7 @@ class {'nifi':
   admin                  => 'DC=com, DC=nifi, CN=admin',
   key_password           => 'SuperSecretUser',
   require                => [Class['java','ruby::dev'], Package['libcurl4-openssl-dev', 'zlib1g-dev']]
-  } ->
-exec { 'sleep_4_nifi_service' :
-  require => Service["nifi"],
-  command => 'sleep 60',
-  path    => "/usr/bin:/bin:/usr/sbin",
+  } 
 }
 
 nifi_pg {'test':
@@ -115,7 +117,7 @@ nifi_pg {'test':
   host     => $facts[networking][ip],
   cert     => '/vagrant/data/nifi/admin-cert.pem',
   cert_key => '/vagrant/data/nifi/admin-private-key.pem',
-  require  => Exec['sleep_4_nifi_service'],
+  require  => Class['nifi::postconfig'],
 }
 
 nifi_template {'IN.hmStaff.taskStatus.xml':
@@ -124,11 +126,40 @@ nifi_template {'IN.hmStaff.taskStatus.xml':
   secure   => true,
   cert     => '/vagrant/data/nifi/admin-cert.pem',
   cert_key => '/vagrant/data/nifi/admin-private-key.pem',
-  require  => Exec['sleep_4_nifi_service'],
+  require  => Class['nifi::postconfig'],
 }
 ```
 
 After a "repuppet", you can access your nifi server https://<nifi_ip>:9443/nifi
+
+#### Adding no admin users.
+
+To add a new user
+
+Create and package certificates
+
+```
+openssl req -x509 -newkey rsa:2048 -keyout user-private-key.pem -out user-cert.pem -days 365 -subj "/CN=user/DC=nifi/DC=com" -nodes
+openssl pkcs12 -inkey user-private-key.pem -in user-cert.pem -export -out q-user.pfx -passout pass:"User"
+```
+
+Import certificate to truststore (You must know the truststore pass. In this example SecretServer)
+
+```
+keytool -importcert -v -trustcacerts -alias user -file /vagrant_data/nifi/user-cert.pem -keystore truststore.jks
+```
+
+Add user to your puppet manifest.
+
+```puppet
+nifi::user{'DC=com, DC=nifi, CN=user':
+  require  => Class['nifi::postconfig']
+}
+```
+
+**This add new user to _users.xml_ file and add the user id to flow policy within _authorizations.xml_ file (This allow this user to login in the UI but nothing more).**
+
+You need to use the UI to grant other permissions.
 
 ## Authors:
 
