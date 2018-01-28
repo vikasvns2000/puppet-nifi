@@ -59,7 +59,7 @@ class nifi::postconfig {
   #}
 
   exec { 'restart_nifi_service' :
-    command => 'service nifi restart',
+    command => 'service nifi restart && sleep 60',
     path    => '/usr/bin:/bin:/usr/sbin',
     require => Augeas['nifi_api_resources']
   }
