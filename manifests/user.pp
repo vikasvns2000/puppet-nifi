@@ -8,7 +8,7 @@ define nifi::user {
     "set \$user/#attribute/identity '$name'",
   ]
 
-  augeas{"nifi_user__users_${name}" :
+  augeas{"nifi_user_users_${name}" :
     incl    => "/opt/nifi-${nifi::version}/conf/users.xml",
     context => "/files/opt/nifi-${nifi::version}/conf/users.xml/tenants/users",
     lens    => 'Xml.lns',
@@ -28,9 +28,10 @@ define nifi::user {
     changes => $user_changes_authorizations,
   }
 
-  #exec { 'restart_nifi_service' :
-  #  command => 'service nifi restart && sleep 60',
-  #  path    => '/usr/bin:/bin:/usr/sbin',
-  #  require => Augeas["nifi_user_${name}"]
-  #}
+  exec { "restart_nifi_service_${name}" :
+    command => 'service nifi restart && sleep 60',
+    path    => '/usr/bin:/bin:/usr/sbin',
+    require => Augeas["nifi_user_users_${name}", "nifi_user_authorizations_${name}"],
+    unless  => "/bin/grep -Pzo 'flow(.|\\n)*?${nifi_user_uuid}' /opt/nifi-${nifi::version}/conf/authorizations.xml"
+  }
 }

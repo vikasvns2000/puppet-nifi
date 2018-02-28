@@ -8,6 +8,7 @@ class nifi::postconfig {
     require => Service["nifi"],
     command => "sleep 60 && rm /opt/nifi-${nifi::version}/conf/authorizations.xml && service nifi restart && sleep 60",
     path    => "/usr/bin:/bin:/usr/sbin",
+    unless  => "/bin/grep -Pzo 'flow(.|\\n)*?${nifi::nifi_admin_uuid}' /opt/nifi-${nifi::version}/conf/authorizations.xml"
   }
 
   $resources_changes = [
@@ -61,7 +62,8 @@ class nifi::postconfig {
   exec { 'restart_nifi_service' :
     command => 'service nifi restart && sleep 60',
     path    => '/usr/bin:/bin:/usr/sbin',
-    require => Augeas['nifi_api_resources']
+    require => Augeas['nifi_api_resources'],
+    unless  => "/bin/grep resources.*${nifi::nifi_admin_uuid} /opt/nifi-${nifi::version}/conf/authorizations.xml"
   }
   #require => Augeas['nifi_api_resources', 'nifi_api_processors', 'nifi_api_process_groups']
 }
