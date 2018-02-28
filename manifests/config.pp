@@ -89,13 +89,22 @@ class nifi::config {
       notify{'truststore_file_source from puppet':}
     }
 
-    augeas{'nifi_admin_user_authorizers' :
-      incl    => "/opt/nifi-${nifi::version}/conf/authorizers.xml",
-      context => "/files/opt/nifi-${nifi::version}/conf/authorizers.xml",
-      lens    => 'Xml.lns',
-      changes => [
-        "set /files/opt/nifi-${nifi::version}/conf/authorizers.xml/authorizers/authorizer/property[#attribute[name='Initial Admin Identity']]/#text '${nifi::admin}'",
-      ]
+    #augeas{'nifi_admin_user_authorizers' :
+    #  incl    => "/opt/nifi-${nifi::version}/conf/authorizers.xml",
+    #  context => "/files/opt/nifi-${nifi::version}/conf/authorizers.xml",
+    #  lens    => 'Xml.lns',
+    #  changes => [
+    #    "set /files/opt/nifi-${nifi::version}/conf/authorizers.xml/authorizers/authorizer/property[#attribute[name='Initial Admin Identity']]/#text '${nifi::admin}'",
+    #  ]
+    #}
+    file { 'nifi_authorizers_xml':
+      ensure  => present,
+      path    => "/opt/nifi-${nifi::version}/conf/authorizers.xml",
+      content => template("${module_name}/authorizers.xml.erb"),
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0600',
+      replace => false,
     }
   }
 

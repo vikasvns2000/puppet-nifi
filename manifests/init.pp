@@ -17,6 +17,7 @@ class nifi (
   $keystore_password      = undef,
   $truststore_file_source = undef,
   $truststore_password    = undef,
+  $host_header            = 'localhost'
 
 ) inherits nifi::params {
 
