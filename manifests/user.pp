@@ -13,6 +13,7 @@ define nifi::user {
     context => "/files/opt/nifi-${nifi::version}/conf/users.xml/tenants/users",
     lens    => 'Xml.lns',
     changes => $user_changes_users,
+    require => Exec['restart_nifi_service_postconfig']
   }
 
   $user_changes_authorizations = [
@@ -26,12 +27,13 @@ define nifi::user {
     context => "/files/opt/nifi-${nifi::version}/conf/authorizations.xml/authorizations/policies",
     lens    => 'Xml.lns',
     changes => $user_changes_authorizations,
+    require => Exec['restart_nifi_service_postconfig']
   }
 
-  exec { "restart_nifi_service_${name}" :
-    command => 'service nifi restart && sleep 60',
-    path    => '/usr/bin:/bin:/usr/sbin',
-    require => Augeas["nifi_user_users_${name}", "nifi_user_authorizations_${name}"],
-    unless  => "/bin/grep -Pzo 'flow(.|\\n)*?${nifi_user_uuid}' /opt/nifi-${nifi::version}/conf/authorizations.xml"
-  }
+  #exec { "restart_nifi_service_${name}" :
+  #  command => 'service nifi restart && sleep 60',
+  #  path    => '/usr/bin:/bin:/usr/sbin',
+  #  require => Augeas["nifi_user_users_${name}", "nifi_user_authorizations_${name}"],
+  #  unless  => "/bin/grep -Pzo 'flow(.|\\n)*?${nifi_user_uuid}' /opt/nifi-${nifi::version}/conf/authorizations.xml"
+  #}
 }

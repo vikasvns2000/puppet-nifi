@@ -104,7 +104,6 @@ class nifi::config {
       owner   => 'root',
       group   => 'root',
       mode    => '0600',
-      replace => false,
     }
   }
 
