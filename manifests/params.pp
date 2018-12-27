@@ -8,7 +8,7 @@ class nifi::params {
     }
   }
 
-  $version               = '1.5.0'
+  $version               = '1.6.0'
   $root_path             = '/opt'
   $repo_scheme           = 'http'
   $repo_domain           = 'archive.apache.org'
